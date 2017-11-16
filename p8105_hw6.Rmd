@@ -21,6 +21,7 @@ library(tidyverse)
 library(httr)
 library(jsonlite)
 library(tidytext)
+library(ggplot2)
 get_all_inspections = function(url) {
   
   all_inspections = vector("list", length = 0)
@@ -102,27 +103,20 @@ Column {data-width=400}
 ### Scatterplot: Word counts and Score
 
 ```{r}
-
-```
-
-```{r}
 nyc_inspections_maxannualgrade = 
   nyc_inspections %>%
   filter(!is.na(grade)) %>%
-  distinct(camis, grade_date, grade) %>%
   separate(grade_date, into = c("grade_year", "remove"), sep = "-") %>%
   select(camis, grade_year, grade) %>%
   distinct(camis, grade_year, grade) %>%
-  arrange(camis, grade_year, grade) %>%
   group_by(camis, grade_year) %>%
   mutate(grade = replace(grade, grade == "A", "5"),
          grade = replace(grade, grade == "B", "4"),
          grade = replace(grade, grade == "C", "3"),
          grade = replace(grade, grade == "Z", "2"),
          grade = replace(grade, grade == "P", "1"),
-         grade = replace(grade, grade == "Not Yet Graded", "0")) %>%
-  group_by(camis, grade_year) %>%
-  mutate(grade = as.numeric(grade),
+         grade = replace(grade, grade == "Not Yet Graded", "0"),
+         grade = as.numeric(grade),
          max_grade = max(grade)) %>%
   mutate(max_grade = replace(max_grade, max_grade == "5", "A"),
          max_grade = replace(max_grade, max_grade == "4", "B"),
@@ -148,6 +142,11 @@ speghetti_plot_nyc_restaurant =
   geom_path()
 
 ggplotly(speghetti_plot_nyc_restaurant)
+
+nyc_inspections_annualgrade %>%
+  plot_ly(x = ~grade_year, y = ~max_grade, type = "scatter", mode = "markers",
+          alpha = 0.5, 
+          color = ~camis)
 ```
 
 ### Boxplot: Scores and grades
