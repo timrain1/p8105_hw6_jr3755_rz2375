@@ -55,14 +55,18 @@ nyc_inspections = get_all_inspections(url) %>%
   bind_rows() 
 ```
 
-Column {data-width=500}
+Column {data-width=600}
 -----------------------------------------------------------------------
 
 ### Chart A
 
 ```{r}
-
+nyc_inspections %>%
+  
 ```
+
+Column {data-width=400}
+-----------------------------------------------------------------------
 
 ### Chart B
 
@@ -70,16 +74,7 @@ Column {data-width=500}
 
 ```
 
-Column {data-width=500}
------------------------------------------------------------------------
-
 ### Chart C
-
-```{r}
-
-```
-
-### Chart D
 
 ```{r}
 
