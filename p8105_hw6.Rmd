@@ -7,6 +7,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
 library(flexdashboard)
 library(tidyverse)
 library(janitor)
@@ -18,7 +19,7 @@ library(shiny)
 library(tidyverse)
 library(httr)
 library(jsonlite)
-
+library(tidytext)
 get_all_inspections = function(url) {
   
   all_inspections = vector("list", length = 0)
@@ -86,11 +87,42 @@ Column {data-width=400}
 ### Chart B
 
 ```{r}
+nyc_inspections <- nyc_inspections %>% 
+  mutate(inspection_num = row_number(), score = as.numeric(score))
 
+inspection_words = nyc_inspections %>% 
+  unnest_tokens(word, violation_description) %>% 
+  group_by(inspection_num) %>% 
+  mutate()
+
+data(stop_words)
+inspection_words = 
+  anti_join(inspection_words, stop_words)
+
+bing_sentiments = get_sentiments("bing")
+
+inspection_sentiments = inspection_words %>% 
+  inner_join(., bing_sentiments) %>% 
+  count(inspection_num, sentiment) %>% 
+  spread(sentiment, n, fill = 0)
+
+inspection_sentiments = 
+  right_join(nyc_inspections, inspection_sentiments, 
+             by = "inspection_num")
+
+scatter_plot <- inspection_sentiments %>% 
+  ggplot(aes(x = positive, y = score)) +
+  geom_point()
 ```
 
 ### Chart C
 
 ```{r}
-
+boxplot <- nyc_inspections %>% 
+  filter(!is.na(grade)) %>% 
+  mutate(grade = as.factor(grade), score = as.numeric(score)) %>% 
+  ggplot(aes(x = grade, y = score, color = grade)) + 
+  geom_boxplot() +
+  labs(title = "Boxplot for scores of different grades from inspections")
+ggplotly(boxplot)
 ```
