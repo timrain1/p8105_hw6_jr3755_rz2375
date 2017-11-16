@@ -105,6 +105,51 @@ Column {data-width=400}
 
 ```
 
+```{r}
+nyc_inspections_maxannualgrade = 
+  nyc_inspections %>%
+  filter(!is.na(grade)) %>%
+  distinct(camis, grade_date, grade) %>%
+  separate(grade_date, into = c("grade_year", "remove"), sep = "-") %>%
+  select(camis, grade_year, grade) %>%
+  distinct(camis, grade_year, grade) %>%
+  arrange(camis, grade_year, grade) %>%
+  group_by(camis, grade_year) %>%
+  mutate(grade = replace(grade, grade == "A", "5"),
+         grade = replace(grade, grade == "B", "4"),
+         grade = replace(grade, grade == "C", "3"),
+         grade = replace(grade, grade == "Z", "2"),
+         grade = replace(grade, grade == "P", "1"),
+         grade = replace(grade, grade == "Not Yet Graded", "0")) %>%
+  group_by(camis, grade_year) %>%
+  mutate(grade = as.numeric(grade),
+         max_grade = max(grade)) %>%
+  mutate(max_grade = replace(max_grade, max_grade == "5", "A"),
+         max_grade = replace(max_grade, max_grade == "4", "B"),
+         max_grade = replace(max_grade, max_grade == "3", "C"),
+         max_grade = replace(max_grade, max_grade == "2", "Z"),
+         max_grade = replace(max_grade, max_grade == "1", "P"),
+         max_grade = replace(max_grade, max_grade == "0", "Not Yet Graded")) %>%
+  select(camis, grade_year, max_grade) %>%
+  distinct(camis, grade_year, max_grade)
+
+nyc_inspections_namencamis = 
+  nyc_inspections %>%
+  distinct(camis, dba)
+  
+nyc_inspections_annualgrade = 
+  left_join(nyc_inspections_maxannualgrade, nyc_inspections_namencamis, key = "camis") %>%
+  rename(restaurant_name = dba)
+
+speghetti_plot_nyc_restaurant =
+  nyc_inspections_annualgrade %>%
+  ggplot(aes(x = grade_year, y = max_grade, color = camis)) +
+  geom_point() +
+  geom_path()
+
+ggplotly(speghetti_plot_nyc_restaurant)
+```
+
 ### Boxplot: Scores and grades
 
 ```{r}
