@@ -59,7 +59,7 @@ nyc_inspections = get_all_inspections(url) %>%
 Column {data-width=600}
 -----------------------------------------------------------------------
 
-### Barchart: Cuisine 
+### Barchart: Cuisine types
 
 ```{r}
 nyc_inspections %>%
@@ -84,7 +84,7 @@ renderPlotly({
 Column {data-width=400}
 -----------------------------------------------------------------------
 
-### Chart B
+### Scatterplot: Word counts and Score
 
 ```{r}
 nyc_inspections <- nyc_inspections %>% 
@@ -115,7 +115,7 @@ scatter_plot <- inspection_sentiments %>%
   geom_point()
 ```
 
-### Chart C
+### Boxplot: Scores and grades
 
 ```{r}
 boxplot <- nyc_inspections %>% 
