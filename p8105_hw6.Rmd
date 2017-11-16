@@ -4,6 +4,7 @@ output:
   flexdashboard::flex_dashboard:
     orientation: columns
     vertical_layout: fill
+    runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
@@ -55,6 +56,25 @@ url = "https://data.cityofnewyork.us/resource/9w7m-hzhe.json"
 nyc_inspections = get_all_inspections(url) %>%
   bind_rows() 
 ```
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+nyc_inspections <- nyc_inspections %>% 
+  mutate(score = as.numeric(score)) %>% 
+  filter(!is.na(score))
+
+boro = nyc_inspections %>% distinct(boro) %>% pull()
+selectInput("boro_choice", label = h3("Select boro"),
+            choices = boro, selected = "MANHATTAN")
+
+max_score = nyc_inspections %>%  distinct(score) %>% max()
+min_score = nyc_inspections %>% distinct(score) %>% min()
+
+sliderInput("score_range", label = h3("Choose score range"), min = min_score, 
+        max = max_score, value = c(1, 100))
+```
+
 
 Column {data-width=600}
 -----------------------------------------------------------------------
@@ -62,22 +82,17 @@ Column {data-width=600}
 ### Barchart: Cuisine types
 
 ```{r}
-nyc_inspections %>%
+renderPlotly({ 
+  ggplotly(nyc_inspections %>%
+  filter(boro == input$boro_choice,
+         score %in% input$score_range[1]:input$score_range[2]) %>%
   distinct(camis, cuisine_description) %>%
   count(cuisine_description) %>% 
-  mutate(cuisine_type = fct_reorder(cuisine_description, n)) %>% 
-  plot_ly(x = ~cuisine_type, y = ~n, color = ~cuisine_description, type = "bar")  
-
-boro = nyc_inspections %>% distinct(boro) %>% pull()
-selectInput("boro_choice", label = h3("Select boro"),
-            choices = boro, selected = "Manhattan")
-renderPlotly({
-  nyc_inspections %>%
-  distinct(camis, cuisine_description) %>%
-  filter(boro == input$boro_choice) %>%
-  count(cuisine_description) %>% 
-  mutate(cuisine_type = fct_reorder(cuisine_description, n)) %>% 
-  plot_ly(x = ~cuisine_type, y = ~n, color = ~cuisine_description, type = "bar")
+  filter(n > 100) %>% 
+  mutate(cuisine_description = fct_reorder(cuisine_description, n)) %>% 
+  ggplot(aes(x = cuisine_description, y = n, color = cuisine_description)) + 
+    geom_col() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none"))
 })
 ```
 
@@ -87,42 +102,20 @@ Column {data-width=400}
 ### Scatterplot: Word counts and Score
 
 ```{r}
-nyc_inspections <- nyc_inspections %>% 
-  mutate(inspection_num = row_number(), score = as.numeric(score))
 
-inspection_words = nyc_inspections %>% 
-  unnest_tokens(word, violation_description) %>% 
-  group_by(inspection_num) %>% 
-  mutate()
-
-data(stop_words)
-inspection_words = 
-  anti_join(inspection_words, stop_words)
-
-bing_sentiments = get_sentiments("bing")
-
-inspection_sentiments = inspection_words %>% 
-  inner_join(., bing_sentiments) %>% 
-  count(inspection_num, sentiment) %>% 
-  spread(sentiment, n, fill = 0)
-
-inspection_sentiments = 
-  right_join(nyc_inspections, inspection_sentiments, 
-             by = "inspection_num")
-
-scatter_plot <- inspection_sentiments %>% 
-  ggplot(aes(x = positive, y = score)) +
-  geom_point()
 ```
 
 ### Boxplot: Scores and grades
 
 ```{r}
-boxplot <- nyc_inspections %>% 
+renderPlotly({
+  ggplotly(nyc_inspections %>% 
   filter(!is.na(grade)) %>% 
-  mutate(grade = as.factor(grade), score = as.numeric(score)) %>% 
+  filter(boro == input$boro_choice,
+         score %in% input$score_range[1]:input$score_range[2]) %>%
+  mutate(grade = as.factor(grade)) %>% 
   ggplot(aes(x = grade, y = score, color = grade)) + 
   geom_boxplot() +
-  labs(title = "Boxplot for scores of different grades from inspections")
-ggplotly(boxplot)
+  labs(title = "Boxplot for scores of different grades from inspections"))
+})
 ```
