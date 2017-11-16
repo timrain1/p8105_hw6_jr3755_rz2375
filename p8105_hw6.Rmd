@@ -71,7 +71,7 @@ selectInput("boro_choice", label = h3("Select boro"),
 max_score = nyc_inspections %>%  distinct(score) %>% max()
 min_score = nyc_inspections %>% distinct(score) %>% min()
 
-sliderInput("score_range", label = h3("Choose score range"), min = min_score, 
+sliderInput("score_range", label = h3("Choose inspection score range"), min = min_score, 
         max = max_score, value = c(1, 100))
 ```
 
@@ -92,7 +92,9 @@ renderPlotly({
   mutate(cuisine_description = fct_reorder(cuisine_description, n)) %>% 
   ggplot(aes(x = cuisine_description, y = n, color = cuisine_description)) + 
     geom_col() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none"))
+    theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")) +
+    labs(title = "Barchart for the number of different type of restaurants",
+       x = "Restaurant type", y = "Count"))
 })
 ```
 
@@ -161,6 +163,7 @@ renderPlotly({
   mutate(grade = as.factor(grade)) %>% 
   ggplot(aes(x = grade, y = score, color = grade)) + 
   geom_boxplot() +
-  labs(title = "Boxplot for scores of different grades from inspections"))
+  labs(title = "Boxplot for inspection scores of different grades from inspections",
+       x = "Inspection score", y = "Inspection grade"))
 })
 ```
