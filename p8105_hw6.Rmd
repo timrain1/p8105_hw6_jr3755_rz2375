@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "p8105_hw6_jr3755_rz2375"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
@@ -58,11 +58,26 @@ nyc_inspections = get_all_inspections(url) %>%
 Column {data-width=600}
 -----------------------------------------------------------------------
 
-### Chart A
+### Barchart: Cuisine 
 
 ```{r}
 nyc_inspections %>%
-  
+  distinct(camis, cuisine_description) %>%
+  count(cuisine_description) %>% 
+  mutate(cuisine_type = fct_reorder(cuisine_description, n)) %>% 
+  plot_ly(x = ~cuisine_type, y = ~n, color = ~cuisine_description, type = "bar")  
+
+boro = nyc_inspections %>% distinct(boro) %>% pull()
+selectInput("boro_choice", label = h3("Select boro"),
+            choices = boro, selected = "Manhattan")
+renderPlotly({
+  nyc_inspections %>%
+  distinct(camis, cuisine_description) %>%
+  filter(boro == input$boro_choice) %>%
+  count(cuisine_description) %>% 
+  mutate(cuisine_type = fct_reorder(cuisine_description, n)) %>% 
+  plot_ly(x = ~cuisine_type, y = ~n, color = ~cuisine_description, type = "bar")
+})
 ```
 
 Column {data-width=400}
