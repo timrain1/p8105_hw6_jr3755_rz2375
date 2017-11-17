@@ -102,53 +102,40 @@ renderPlotly({
 Column {data-width=400}
 -----------------------------------------------------------------------
 
-### Scatterplot: Word counts and Score
+### Scatterplot: Score comparison (between 2016 and 2017) for Manhattan restaurants 
 
-```{r}
-nyc_inspections_maxannualgrade = 
+```{r 2}
+nyc_inspections_maxannualscore = 
   nyc_inspections %>%
-  filter(!is.na(grade)) %>%
-  separate(grade_date, into = c("grade_year", "remove"), sep = "-") %>%
-  select(camis, grade_year, grade) %>%
-  distinct(camis, grade_year, grade) %>%
+  filter(!is.na(score)) %>%
+  filter(boro == "MANHATTAN") %>%
+  separate(grade_date, into = c("grade_year", "grade_month", "grade_day"), sep = "-") %>%
+  select(camis, grade_year, score) %>%
+  distinct(camis, grade_year, score) %>%
+  filter(grade_year %in% c("2016", "2017")) %>%
   group_by(camis, grade_year) %>%
-  mutate(grade = replace(grade, grade == "A", "5"),
-         grade = replace(grade, grade == "B", "4"),
-         grade = replace(grade, grade == "C", "3"),
-         grade = replace(grade, grade == "Z", "2"),
-         grade = replace(grade, grade == "P", "1"),
-         grade = replace(grade, grade == "Not Yet Graded", "0"),
-         grade = as.numeric(grade),
-         max_grade = max(grade)) %>%
-  mutate(max_grade = replace(max_grade, max_grade == "5", "A"),
-         max_grade = replace(max_grade, max_grade == "4", "B"),
-         max_grade = replace(max_grade, max_grade == "3", "C"),
-         max_grade = replace(max_grade, max_grade == "2", "Z"),
-         max_grade = replace(max_grade, max_grade == "1", "P"),
-         max_grade = replace(max_grade, max_grade == "0", "Not Yet Graded")) %>%
-  select(camis, grade_year, max_grade) %>%
-  distinct(camis, grade_year, max_grade)
+  mutate(max_score = max(score)) %>%
+  select(camis, grade_year, max_score) %>%
+  distinct(camis, grade_year, max_score) %>%
+  ungroup() %>%
+  mutate(grade_year = replace(grade_year, grade_year == "2016", "last_year"),
+         grade_year = replace(grade_year, grade_year == "2017", "this_year"),
+         max_score = as.numeric(max_score)) %>%
+  spread(key = grade_year, value = max_score) %>%
+  na.omit()
 
 nyc_inspections_namencamis = 
   nyc_inspections %>%
   distinct(camis, dba)
   
-nyc_inspections_annualgrade = 
-  left_join(nyc_inspections_maxannualgrade, nyc_inspections_namencamis, key = "camis") %>%
+nyc_inspections_annualscore = 
+  left_join(nyc_inspections_maxannualscore, nyc_inspections_namencamis, key = "camis") %>%
   rename(restaurant_name = dba)
 
-speghetti_plot_nyc_restaurant =
-  nyc_inspections_annualgrade %>%
-  ggplot(aes(x = grade_year, y = max_grade, color = camis)) +
-  geom_point() +
-  geom_path()
-
-ggplotly(speghetti_plot_nyc_restaurant)
-
-nyc_inspections_annualgrade %>%
-  plot_ly(x = ~grade_year, y = ~max_grade, type = "scatter", mode = "markers",
-          alpha = 0.5, 
-          color = ~camis)
+nyc_inspections_annualscore %>%
+  mutate(text_label = str_c("Restaurant name: ", restaurant_name)) %>% 
+  plot_ly(x = ~last_year, y = ~this_year, type = "scatter", mode = "markers",
+          alpha = 0.5, sizes = 0.05, text = ~text_label)
 ```
 
 ### Boxplot: Scores and grades
