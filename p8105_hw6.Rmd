@@ -1,5 +1,5 @@
 ---
-title: "p8105_hw6_jr3755_rz2375"
+title: "NYC Restaurant Inspections exploratory plot by Junting Ren and Ruiwei Zhang"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
@@ -73,11 +73,16 @@ max_score = nyc_inspections %>%  distinct(score) %>% max()
 min_score = nyc_inspections %>% distinct(score) %>% min()
 
 sliderInput("score_range", label = h3("Choose inspection score range"), min = min_score, 
-        max = max_score, value = c(1, 100))
+        max = max_score, value = c(-2, 151))
+
+grade_choice = nyc_inspections %>% distinct(grade) %>% pull()
+radioButtons("Grade", label = h3("Choose inspection grade"),
+    choices = grade_choice, 
+    selected = "A")
 ```
+ 
 
-
-Column {data-width=600}
+Column {data-width=500}
 -----------------------------------------------------------------------
 
 ### Barchart: Cuisine types
@@ -86,20 +91,21 @@ Column {data-width=600}
 renderPlotly({ 
   ggplotly(nyc_inspections %>%
   filter(boro == input$boro_choice,
-         score %in% input$score_range[1]:input$score_range[2]) %>%
+         score %in% input$score_range[1]:input$score_range[2],
+         grade == input$Grade) %>%
   distinct(camis, cuisine_description) %>%
   count(cuisine_description) %>% 
   filter(n > 100) %>% 
   mutate(cuisine_description = fct_reorder(cuisine_description, n)) %>% 
   ggplot(aes(x = cuisine_description, y = n, color = cuisine_description)) + 
     geom_col() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none") +
     labs(title = "Barchart for the number of different type of restaurants",
        x = "Restaurant type", y = "Count"))
 })
 ```
 
-Column {data-width=400}
+Column {data-width=500}
 -----------------------------------------------------------------------
 
 ### Scatterplot: Score comparison (between 2016 and 2017) for Manhattan restaurants 
@@ -146,10 +152,11 @@ renderPlotly({
   filter(!is.na(grade)) %>% 
   filter(boro == input$boro_choice,
          score %in% input$score_range[1]:input$score_range[2]) %>%
-  mutate(grade = as.factor(grade)) %>% 
+  mutate(grade = as.factor(grade),
+         score = as.numeric(score)) %>% 
   ggplot(aes(x = grade, y = score, color = grade)) + 
   geom_boxplot() +
   labs(title = "Boxplot for inspection scores of different grades from inspections",
-       x = "Inspection score", y = "Inspection grade"))
+       y = "Inspection score", x = "Inspection grade"))
 })
 ```
